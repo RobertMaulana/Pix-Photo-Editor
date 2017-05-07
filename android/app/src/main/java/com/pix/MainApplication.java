@@ -1,9 +1,8 @@
 package com.pix;
 
 import android.app.Application;
-
 import com.facebook.react.ReactApplication;
-import com.projectseptember.RNGL.RNGLPackage;
+import cl.json.RNSharePackage;
 import com.RNFetchBlob.RNFetchBlobPackage;
 import com.lwansbrough.RCTCamera.RCTCameraPackage;
 import com.oblador.vectoricons.VectorIconsPackage;
@@ -17,6 +16,7 @@ import java.util.List;
 
 public class MainApplication extends Application implements ReactApplication {
 
+
   private final ReactNativeHost mReactNativeHost = new ReactNativeHost(this) {
     @Override
     public boolean getUseDeveloperSupport() {
@@ -26,8 +26,8 @@ public class MainApplication extends Application implements ReactApplication {
     @Override
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
-          new MainReactPackage(),
-            new RNGLPackage(),
+            new MainReactPackage(),
+            new RNSharePackage(),
             new RNFetchBlobPackage(),
             new RCTCameraPackage(),
             new VectorIconsPackage()
