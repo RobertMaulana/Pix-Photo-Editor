@@ -27,13 +27,16 @@ import {
   Platform,
   Clipboard,
   ToastAndroid,
+  TouchableOpacity,
+  AsyncStorage
 } from 'react-native';
 import RNFetchBlob from 'react-native-fetch-blob';
 import ResponsiveImage from 'react-native-responsive-image';
 import Slider from 'react-native-slider';
 import Share, {ShareSheet} from 'react-native-share';
-// import FBSDK, {LoginButton} from 'react-native-fbsdk';
+import FBSDK, {LoginManager, AccessToken} from 'react-native-fbsdk';
 
+const ACCESS_TOKEN = "access_token";
 
 class Home extends Component {
   static navigationOptions = {
@@ -47,16 +50,9 @@ class Home extends Component {
       modalVisible: false,
       imageToEdit: null,
       visible: false,
-      url: ''
+      token:''
     }
-  }
 
-  dataImage(){
-    const image = this.state.photos[this.state.index].node.image.uri
-    RNFetchBlob.fs.readFile(image, 'base64')
-    .then((data) => {
-      this.setState({url: `data:image/jpg;base64,${data}`})
-    })
   }
 
   share() {
@@ -64,7 +60,6 @@ class Home extends Component {
     const image = this.state.photos[this.state.index].node.image.uri
     RNFetchBlob.fs.readFile(image, 'base64')
     .then((data) => {
-      console.log(data);
       let shareOptions = {
         title: "React Native Share Example",
         message: "Check out this photo!",
@@ -112,14 +107,51 @@ class Home extends Component {
     .then(r => this.setState({photos: r.edges}))
   }
 
+  _fbAuth(){
+      LoginManager.logInWithReadPermissions(['public_profile', 'email']).then(function(result){
+        if (result.isCancelled) {
+          console.log('Login was canceled');
+        }else {
+          AccessToken.getCurrentAccessToken().then(
+            (data) => {
+              AsyncStorage.setItem(ACCESS_TOKEN, data.accessToken.toString(), ()=> {
+                AsyncStorage.getItem(ACCESS_TOKEN, (err, result) => {
+                  this.setState({token: result})
+                });
+              })
+
+            }
+          )
+        }
+      }, function(error){
+        console.log('An error occured');
+      })
+  }
+
+  async _checkFbAuth(){
+    AsyncStorage.getItem(ACCESS_TOKEN, (err, result) => {
+      if (result !== null) {
+        const image = this.state.photos[this.state.index].node.image.uri
+        RNFetchBlob.fs.readFile(image, 'base64')
+        .then((data) => {
+          let shareOptions = {
+            title: "React Native Share Example",
+            message: "Check out this photo!",
+            url: `data:image/jpg;base64,${data}`,
+            subject: "Check out this photo!"
+          }
+          Share.shareSingle(Object.assign(shareOptions, {
+            "social": "facebook"
+          }));
+        })
+      }else{
+        this._fbAuth()
+      }
+    })
+  }
+
   render(){
     const { navigate } = this.props.navigation;
-    let shareOptions = {
-      title: "React Native",
-      message: "Hola mundo",
-      url: this.state.url,
-      subject: "Share Link" //  for email
-    };
     return (
       <Container>
       {console.log(this.state.url)}
@@ -168,12 +200,7 @@ class Home extends Component {
           <Button iconSrc={{ uri: FACEBOOK_ICON }}
                   onPress={()=>{
                 this.onCancel();
-                this.dataImage();
-                setTimeout(() => {
-                  Share.shareSingle(Object.assign(shareOptions, {
-                    "social": "facebook"
-                  }));
-                },300);
+                this._checkFbAuth();
             }}><Text>Facebook</Text></Button>
         </ShareSheet>
         <Modal
